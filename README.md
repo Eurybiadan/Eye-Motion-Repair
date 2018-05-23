@@ -1,2 +1,2 @@
-# Scanner-Distortion-Removal
-Code that removes residual distortions from videos processed by Demotion
+# Eye Motion Repair.
+Code that removes residual distortions due to eye motion from images and videos processed by Demotion.
