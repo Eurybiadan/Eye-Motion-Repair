@@ -210,10 +210,10 @@ clear tmp;
     
     disp_field = cat(3,xgriddistortion,ygriddistortion);
 
-    warpedStk = uint8(zeros(size(disp_field,1),size(disp_field,2),length(imStk)));
+    warpedStk = zeros(size(disp_field,1),size(disp_field,2),length(imStk));
     
     for i=1:length(imStk)
-        warpedStk(:,:,i) = uint8(imwarp(imStk{i},disp_field,'FillValues',0) );
+        warpedStk(:,:,i) = imwarp(double(imStk{i}),disp_field,'FillValues',NaN);
     end
 
 
@@ -230,18 +230,18 @@ clear tmp;
     [maxarea, maxind] = max([cropbox.Area]); % Take the bigger of the two areas
     cropbox = cropbox(maxind).BoundingBox;
     
-    warpedStk = warpedStk( round(cropbox(2)):round(cropbox(4)), round(cropbox(1)):round(cropbox(3)), : );
-    
-    
-%    fName(1:end-4)
-    
+    warpedStk = warpedStk( round(cropbox(2)):round(cropbox(4)), round(cropbox(1)):round(cropbox(3)), : );    
+
     if length(imStk)== 1
-        imwrite(warpedStk, fullfile(motion_path,'Repaired', [fName(1:end-4) '_repaired.tif']));
+        
+        saveTransparentTif(warpedStk(:,:,1),fullfile(motion_path,'Repaired', [fName(1:end-4) '_repaired.tif']));
+        
+%         imwrite(warpedStk, fullfile(motion_path,'Repaired', [fName(1:end-4) '_repaired.tif']), 'Compression','lzw');
     else
         vidobj = VideoWriter( fullfile(motion_path,'Repaired', [fName(1:end-4) '_repaired.avi']), 'Grayscale AVI' );
 
         open(vidobj);
-        writeVideo(vidobj,warpedStk);
+        writeVideo(vidobj,uint8(warpedStk));
         close(vidobj);
     end
     

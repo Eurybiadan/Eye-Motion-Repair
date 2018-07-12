@@ -208,15 +208,15 @@ function [] = Eye_Motion_Distortion_Repair(motion_path, fName, static_grid_disto
     
     disp_field = cat(3,xgriddistortion,ygriddistortion);
 
-    warpedStk = uint8(zeros(size(disp_field,1),size(disp_field,2),length(imStk)));
+    warpedStk = zeros(size(disp_field,1),size(disp_field,2),length(imStk));
     
     for i=1:length(imStk)
-        warpedStk(:,:,i) = uint8(imwarp(imStk{i},disp_field,'FillValues',0) );
+        warpedStk(:,:,i) = round(imwarp(double(imStk{i}),disp_field,'FillValues',NaN) );
     end
 
 
-    if ~exist( fullfile(motion_path, 'Redewarped'), 'dir' )
-        mkdir(fullfile(motion_path, 'Redewarped'))
+    if ~exist( fullfile(motion_path, 'Repaired'), 'dir' )
+        mkdir(fullfile(motion_path, 'Repaired'))
     end
     
     warpedIm = mean(warpedStk,3);
@@ -234,9 +234,10 @@ function [] = Eye_Motion_Distortion_Repair(motion_path, fName, static_grid_disto
     fName(1:end-4)
     
     if length(imStk)== 1
-        imwrite(warpedStk, fullfile(motion_path,'Redewarped', [fName(1:end-4) '_redewarped.tif']));
+        saveTransparentTif(warpedStk(:,:,1),fullfile(motion_path,'Repaired', [fName(1:end-4) '_repaired.tif']));
+%         imwrite(warpedStk, fullfile(motion_path,'Redewarped', [fName(1:end-4) '_redewarped.tif']));
     else
-        vidobj = VideoWriter( fullfile(motion_path,'Redewarped', [fName(1:end-4) '_redewarped.avi']), 'Grayscale AVI' );
+        vidobj = VideoWriter( fullfile(motion_path,'Repaired', [fName(1:end-4) '_redewarped.avi']), 'Grayscale AVI' );
 
         open(vidobj);
         writeVideo(vidobj,warpedStk);

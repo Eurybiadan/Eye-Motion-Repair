@@ -28,9 +28,7 @@ clc
 
 [distortfile, distortpath]=uigetfile('*.mat','Select the desinusoid file for this dataset.');
 
-load(fullfile(distortpath,distortfile),'horizontal_fringes_indices_minima');
-
-static_grid_distortion = Static_Distortion_Repair(horizontal_fringes_indices_minima);
+static_grid_distortion = Static_Distortion_Repair(fullfile(distortpath,distortfile));
 
 motion_path = uigetdir(pwd);
 

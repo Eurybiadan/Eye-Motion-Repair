@@ -62,22 +62,16 @@ except:
 
 
 options = {}
-options['title'] = 'Select the DESINUSOID FILE:'
+options['title'] = 'Select the folder containing the DESINUSOID files:'
 options['parent'] = root
-options['filetypes'] = [("MAT File", ".mat")]
 
-desinsoid_file = tkFileDialog.askopenfilename(**options)
+desinsoid_folder = tkFileDialog.askdirectory(**options)
 
-static_distortion = mat_engi.Static_Distortion_Repair(desinsoid_file)
-
-print "Calculated distortion"
-
-just_the_dir = os.path.split(desinsoid_file)[0]
 
 options = {}
 options['title'] = 'Select the folder containing the DMP files:'
 options['parent'] = root
-options['initialdir'] = just_the_dir
+options['initialdir'] = desinsoid_folder
 
 dmp_folder_path = tkFileDialog.askdirectory(**options)
 
@@ -114,6 +108,8 @@ for thisfile in os.listdir(dmp_folder_path):
             ff_translation_info_colshift = pick['full_frame_ncc']['column_shifts']
             strip_translation_info = pick['sequence_interval_data_list']
 
+
+            static_distortion = mat_engi.Static_Distortion_Repair(os.path.join(desinsoid_folder, pick['desinusoid_data_filename']))
             firsttime = True
 
             pickle_file.close()
