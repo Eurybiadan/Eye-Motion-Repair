@@ -1,7 +1,7 @@
 function [] = Eye_Motion_Distortion_Repair(motion_path, fName, crop_ROI, framemotion, static_grid_distortion)
-% EYE_MOTION_DISTORTION_REPAIR(motion_path, fName, static_grid_distortion)
+% EYE_MOTION_DISTORTION_REPAIR(motion_path, fName, static_grid_distortion,framemotion, static_grid_distortion)
 %
-% [] = EYE_MOTION_DISTORTION_REPAIR(motion_path, fName, static_grid_distortion)
+% [] = EYE_MOTION_DISTORTION_REPAIR(motion_path, fName, static_grid_distortion,framemotion, static_grid_distortion)
 %
 % Inputs:
 %
@@ -56,8 +56,24 @@ function [] = Eye_Motion_Distortion_Repair(motion_path, fName, crop_ROI, framemo
         
     end
 
-    crop_ROI = cell2mat(crop_ROI);
+    
+    crop_ROI = cell2mat(crop_ROI)    ;
+    tmp_rois = zeros([length(crop_ROI)/4, 4]);
+    for i=1:4:length(crop_ROI)-1        
+        tmp_rois(1+floor(i/4),:) = crop_ROI(i:i+3);
+    end
+    crop_ROI=tmp_rois;
+    ROI_sizes = [crop_ROI(:,2)-crop_ROI(:,1) crop_ROI(:,4)-crop_ROI(:,3)];
+    im_size = size(imStk{1});
+    
+    for i=1:size(ROI_sizes,1)
+        if all(ROI_sizes(i,:) == im_size)
+            crop_ROI = crop_ROI(i,:);
+            break;
+        end
+    end
 
+    
     tmp = zeros( length(framemotion), length(framemotion{1}) );
     % Convert from list into regular array
     for i=1:length(framemotion)

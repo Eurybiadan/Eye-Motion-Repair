@@ -1,5 +1,33 @@
-function [] = Eye_Motion_Distortion_Repair(motion_path, fName, static_grid_distortion)
-    
+function [] = Eye_Motion_Distortion_Repair(motion_path, fName, static_vert_grid_distortion)
+% EYE_MOTION_DISTORTION_REPAIR(motion_path, fName, static_vert_grid_distortion)
+%
+% [] = EYE_MOTION_DISTORTION_REPAIR(motion_path, fName, static_vert_grid_distortion)
+%
+% Inputs:
+%
+%    @motion_path: The path to the file we're going to repair.
+%
+%    @fName: The name of the file we're going to repair.
+%
+%    @static_vert_grid_distortion: The residual vertical static distortion (calculated from Static_Distortion_Repair)
+%                             that we'll remove. If this value is empty, it will not be
+%                             removed.
+%    
+% Copyright (C) 2018 Robert Cooper
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%    
     repeats = 1;
     outlier_cutoff = 20;
 
@@ -200,7 +228,11 @@ function [] = Eye_Motion_Distortion_Repair(motion_path, fName, static_grid_disto
 
         xgriddistortion(i,:) = repmat(median(xmotion_vect(i,:)), [1 size(imStk{1},2)] ); %The ref should be all 0s
 %         if i >= crop_ROI(1) && i<= crop_ROI(2) % Only apply the grid correction within the roi we've cropped to.           
-            ygriddistortion(i,:) = repmat(median(ymotion_vect(i,:))+static_grid_distortion(i+crop_ROI(1)-1), [1 size(imStk{1},2)] );
+        if isempty(static_vert_grid_distortion)
+            ygriddistortion(i,:) = repmat(median(ymotion_vect(i,:)), [1 size(imStk{1},2)] );
+        else
+            ygriddistortion(i,:) = repmat(median(ymotion_vect(i,:))+static_vert_grid_distortion(i+crop_ROI(1)-1), [1 size(imStk{1},2)] );
+        end
 %         else
 %             ygriddistortion(i,:) = repmat(median(ymotion_vect(i,:)), [1 size(imStk{1},2)] );
 %         end

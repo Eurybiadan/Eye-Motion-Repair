@@ -26,7 +26,7 @@ import numpy as np
 root = tk.Tk()
 
 options = {}
-options['title'] = 'Select the dmp file folder'
+options['title'] = 'Select the tif and dmp file folder'
 options['parent'] = root
 
 folder_path = tkFileDialog.askdirectory(**options)
@@ -58,49 +58,65 @@ for thisfile in os.listdir(folder_path):
                
                pickle_file.close()
 
-               minmaxpix = np.zeros((len(strip_translation_info),2))
-               print minmaxpix.shape
-               
-		
-               i=0
+               matches=list()
+               #Find all of the tifs that match this dmp file, and record them.
+               for thatfile in os.listdir(folder_path):
+                    if thatfile.endswith(".tif") and thatfile.startswith(thisfile[0:-4]):
+                         matches.append(thatfile)
+                         print "Matches transform file: "+thatfile
+
+               minmaxpix = np.empty([1,2])
+               		
                for frame in strip_translation_info:
-                    if len(frame) > 0:
-                         ref_pixels = frame[0]['slow_axis_pixels_in_current_frame_interpolated']
-                         minmaxpix[i,0] = ref_pixels[0]
-                         minmaxpix[i,1] = ref_pixels[-1]
-                         i+=1
-               
-               print minmaxpix[:,1].min()
-               print minmaxpix[:,0].max()
+                    for frame_contents in frame:
+                         ref_pixels = frame_contents['slow_axis_pixels_in_current_frame_interpolated']
+                         minmaxpix = np.append(minmaxpix,[[ref_pixels[0], ref_pixels[-1]]], axis=0)
+
+               minmaxpix=minmaxpix[1:,:]
+               #print minmaxpix[:,1].min()
+               #print minmaxpix[:,0].max()
                topmostrow = minmaxpix[:,0].max()
                bottommostrow= minmaxpix[:,1].min()
 
-               print np.array([pick['strip_cropping_ROI_2'][-1]]).shape
+               #print np.array([pick['strip_cropping_ROI_2'][-1]]).shape
                # The first row is the crop ROI.
-               np.savetxt(pickle_path[0:-4]+ "_transforms.csv" , np.array([pick['strip_cropping_ROI_2'][-1]]), delimiter=",", newline="\n", fmt="%f")
+               for i in range(0,len(matches)):
+                    np.savetxt(os.path.join(folder_path, matches[i][0:-4])+ "_transforms.csv" , np.array([pick['strip_cropping_ROI_2'][i]]), delimiter=",", newline="\n", fmt="%f")
 
                for frame in strip_translation_info:
-                    if len(frame) > 0:
+                    if len(frame) > 0:                    
                          print "************************ Frame " +str(frame[0]['frame_index']+1) + "************************"
-			          #print "Adjusting the rows...."
                          frame_ind = frame[0]['frame_index']
-                         
-                         ff_row_shift = ff_translation_info_rowshift[frame_ind]
-                         ff_col_shift = ff_translation_info_colshift[frame_ind]
-			           
-			          #First set the relative shifts
-                         row_shift = (np.subtract(frame[0]['slow_axis_pixels_in_reference_frame'],\
-			                             frame[0]['slow_axis_pixels_in_current_frame_interpolated']))
-                         col_shift = (frame[0]['fast_axis_pixels_in_reference_frame_interpolated'])
+                         slow_axis_pixels=np.zeros([1])
+                         all_col_shifts=np.zeros([1])
+                         all_row_shifts=np.zeros([1])
 
-			          #These will contain all of the motion, not the relative motion between the aligned frames-
-			          #So then subtract the full frame row shift
-                         row_shift = np.add(row_shift, ff_row_shift)
-                         col_shift = np.add(col_shift, ff_col_shift)
+                         for frame_contents in frame:                             
+                              slow_axis_pixels = np.append(slow_axis_pixels,frame_contents['slow_axis_pixels_in_reference_frame'])
+                             
+                              ff_row_shift = ff_translation_info_rowshift[frame_ind]
+                              ff_col_shift = ff_translation_info_colshift[frame_ind]
+			               
+			                  #First set the relative shifts
+                              row_shift = (np.subtract(frame_contents['slow_axis_pixels_in_reference_frame'],\
+			                              frame_contents['slow_axis_pixels_in_current_frame_interpolated']))
+                              col_shift = (frame_contents['fast_axis_pixels_in_reference_frame_interpolated'])
 
-                         transhandle = open( pickle_path[0:-4]+ "_transforms.csv", 'a')
-                         np.savetxt(transhandle, np.vstack( (frame[0]['slow_axis_pixels_in_reference_frame'], col_shift, row_shift) ),delimiter=',',fmt='%f')
-                         transhandle.close()
+			                  #These will contain all of the motion, not the relative motion between the aligned frames-
+			                  #So then subtract the full frame row shift
+                              row_shift = np.add(row_shift, ff_row_shift)
+                              col_shift = np.add(col_shift, ff_col_shift)
+                              all_col_shifts = np.append(all_col_shifts,col_shift)
+                              all_row_shifts = np.append(all_row_shifts,row_shift)
+
+                         slow_axis_pixels = slow_axis_pixels[1:]
+                         all_col_shifts = all_col_shifts[1:]
+                         all_row_shifts = all_row_shifts[1:]
+
+                         for matchedfile in matches:
+                              transhandle = open( os.path.join(folder_path, matchedfile[0:-4]) + "_transforms.csv", 'a')
+                              np.savetxt(transhandle, np.vstack( (slow_axis_pixels, all_col_shifts, all_row_shifts) ),delimiter=',',fmt='%f')
+                              transhandle.close()
 
           except(ValueError, RuntimeError):
                tkMessageBox.showwarning("DMP failed to process.","Failed to process DMP ("+thisfile+")! This file may be corrupted. Re-process the DMP, or contact your local RFC.")

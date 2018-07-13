@@ -26,21 +26,27 @@ clear;
 close all;
 clc
 
-[distortfile, distortpath]=uigetfile('*.mat','Select the desinusoid file for this dataset.');
-
-static_grid_distortion = Static_Distortion_Repair(fullfile(distortpath,distortfile));
-
-motion_path = uigetdir(pwd);
+answer = questdlg('Correct residual static vertical distortions? (Dubra Software Only)');
+switch answer
+    case 'Yes'
+        [distortfile, distortpath]=uigetfile('*.mat','Select the desinusoid file for this dataset.');
+        static_vert_grid_distortion = Static_Distortion_Repair(fullfile(distortpath,distortfile));
+    case 'No'
+        static_vert_grid_distortion=[];
+    case 'Cancel'
+        return;
+end
+motion_path = uigetdir(pwd,'Select folder of images/videos you wish to remove distortion from:');
 
 fNames = read_folder_contents(motion_path,'tif');
 
 if exist('parfor','builtin') == 5 % If we can multithread it, do it!
     parfor i=1:length(fNames)
-        Eye_Motion_Distortion_Repair(motion_path, fNames{i}, static_grid_distortion);
+        Eye_Motion_Distortion_Repair(motion_path, fNames{i}, static_vert_grid_distortion);
     end
 
 else
     for i=1:length(fNames)
-        Eye_Motion_Distortion_Repair(motion_path, fNames{i}, static_grid_distortion);
+        Eye_Motion_Distortion_Repair(motion_path, fNames{i}, static_vert_grid_distortion);
     end
 end

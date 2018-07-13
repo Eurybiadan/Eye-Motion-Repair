@@ -128,7 +128,7 @@ for thisfile in os.listdir(dmp_folder_path):
 
                         for imagefile in os.listdir(image_folder_path):
                             if (checkfile in imagefile) and (imagefile.endswith(".tif") or imagefile.endswith(".avi")):
-                                #print "Whoa! " + imagefile + " matched!"
+                                print "Whoa! " + imagefile + " matched!"
                                 images_to_fix.append(imagefile)
                     break
 
@@ -136,19 +136,14 @@ for thisfile in os.listdir(dmp_folder_path):
             if images_to_fix:
                 print "Using DMP file: " + thisfile
 
-                minmaxpix = np.zeros((len(strip_translation_info), 2))
-                # print minmaxpix.shape
-
-                i = 0
+                minmaxpix = np.empty([1,2])
+               		
                 for frame in strip_translation_info:
-                    if len(frame) > 0:
-                        ref_pixels = frame[0]['slow_axis_pixels_in_current_frame_interpolated']
-                        minmaxpix[i, 0] = ref_pixels[0]
-                        minmaxpix[i, 1] = ref_pixels[-1]
-                        i += 1
+                    for frame_contents in frame:
+                        ref_pixels = frame_contents['slow_axis_pixels_in_current_frame_interpolated']
+                        minmaxpix = np.append(minmaxpix,[[ref_pixels[0], ref_pixels[-1]]], axis=0)
 
-                # print minmaxpix[:, 1].min()
-                # print minmaxpix[:, 0].max()
+                minmaxpix=minmaxpix[1:,:]
                 topmostrow = minmaxpix[:, 0].max()
                 bottommostrow = minmaxpix[:, 1].min()
 
@@ -164,32 +159,49 @@ for thisfile in os.listdir(dmp_folder_path):
                         # print "************************ Frame " + str(frame[0]['frame_index'] + 1) + "************************"
                         # print "Adjusting the rows...."
                         frame_ind = frame[0]['frame_index']
+                        slow_axis_pixels=np.zeros([1])
+                        all_col_shifts=np.zeros([1])
+                        all_row_shifts=np.zeros([1])
 
-                        ff_row_shift = ff_translation_info_rowshift[frame_ind]
-                        ff_col_shift = ff_translation_info_colshift[frame_ind]
+                        for frame_contents in frame:                             
+                            slow_axis_pixels = np.append(slow_axis_pixels,frame_contents['slow_axis_pixels_in_reference_frame'])
+                             
+                            ff_row_shift = ff_translation_info_rowshift[frame_ind]
+                            ff_col_shift = ff_translation_info_colshift[frame_ind]
+			               
+			                #First set the relative shifts
+                            row_shift = (np.subtract(frame_contents['slow_axis_pixels_in_reference_frame'],\
+			                            frame_contents['slow_axis_pixels_in_current_frame_interpolated']))
+                            col_shift = (frame_contents['fast_axis_pixels_in_reference_frame_interpolated'])
 
-                        # First set the relative shifts
-                        row_shift = (np.subtract(frame[0]['slow_axis_pixels_in_reference_frame'],
-                                                 frame[0]['slow_axis_pixels_in_current_frame_interpolated']))
-                        col_shift = (frame[0]['fast_axis_pixels_in_reference_frame_interpolated'])
+			                #These will contain all of the motion, not the relative motion between the aligned frames-
+			                #So then subtract the full frame row shift
+                            row_shift = np.add(row_shift, ff_row_shift)
+                            col_shift = np.add(col_shift, ff_col_shift)
+                            all_col_shifts = np.append(all_col_shifts,col_shift)
+                            all_row_shifts = np.append(all_row_shifts,row_shift)
 
-                        # These will contain all of the motion, not the relative motion between the aligned frames-
-                        # So then subtract the full frame row shift
-                        row_shift = np.add(row_shift, ff_row_shift)
-                        col_shift = np.add(col_shift, ff_col_shift)
+                        slow_axis_pixels = slow_axis_pixels[1:]
+                        all_col_shifts = all_col_shifts[1:]
+                        all_row_shifts = all_row_shifts[1:]
 
-                        shift_array[shift_ind*3, 0:len(frame[0]['slow_axis_pixels_in_reference_frame'])] = frame[0]['slow_axis_pixels_in_reference_frame']
-                        shift_array[shift_ind*3+1, 0:len(col_shift)] = col_shift
-                        shift_array[shift_ind*3+2, 0:len(row_shift)] = row_shift
+                        shift_array[shift_ind*3,   0:len(slow_axis_pixels)] = slow_axis_pixels
+                        shift_array[shift_ind*3+1, 0:len(all_col_shifts)] = all_col_shifts
+                        shift_array[shift_ind*3+2, 0:len(all_row_shifts)] = all_row_shifts
 
                         shift_ind += 1
 
                 # progo.configure("Extracted the eye motion from the dmp file...")
 
+                rois = np.array(pick['strip_cropping_ROI_2'][0])
+
+                for i in range(1, len(pick['strip_cropping_ROI_2'])):
+                    rois = np.append(rois, pick['strip_cropping_ROI_2'][i],axis=0)
+
                 for image in images_to_fix:
                     # progo.configure("Removing distortion from :"+image +"...")
                     print "Removing distortion from :"+image +"..."
-                    mat_engi.Eye_Motion_Distortion_Repair(image_folder_path, image, pick['strip_cropping_ROI_2'][-1],
+                    mat_engi.Eye_Motion_Distortion_Repair(image_folder_path, image, rois.tolist(),
                                                           shift_array.tolist(), static_distortion, nargout=0)
 
                 # progo.step()
