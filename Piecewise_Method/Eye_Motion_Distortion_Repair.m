@@ -30,18 +30,9 @@ function [] = Eye_Motion_Distortion_Repair(motion_path, fName, static_vert_grid_
 %    
     repeats = 1;
     outlier_cutoff = 20;
-
+   
     
-    flipName = fliplr(fName);
-    
-    [tok,remain]=strtok(flipName,'_');
-    for i=1:4
-        [tok,remain]=strtok(remain,'_');
-    end
-    
-    commonName = fliplr(remain);
-    
-    xformsFname = [commonName 'transforms.csv'];
+    xformsFname = [fName(1:end-4) '_transforms.csv'];
    
     modalities = {'confocal','split_det','avg'};    
     repcheck = perms(1:length(modalities));

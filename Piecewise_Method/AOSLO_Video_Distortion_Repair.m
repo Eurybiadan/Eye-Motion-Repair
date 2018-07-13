@@ -27,13 +27,17 @@ clear;
 close all;
 clc
 
-[distortfile, distortpath]=uigetfile('*.mat','Select the desinusoid file for this dataset.');
-
-load(fullfile(distortpath,distortfile),'horizontal_fringes_indices_minima');
-
-static_grid_distortion = Static_Distortion_Repair(horizontal_fringes_indices_minima);
-
-motion_path = uigetdir(pwd);
+answer = questdlg('Correct residual static vertical distortions? (Dubra Software Only)');
+switch answer
+    case 'Yes'
+        [distortfile, distortpath]=uigetfile('*.mat','Select the desinusoid file for this dataset.');
+        static_vert_grid_distortion = Static_Distortion_Repair(fullfile(distortpath,distortfile));
+    case 'No'
+        static_vert_grid_distortion=[];
+    case 'Cancel'
+        return;
+end
+motion_path = uigetdir(pwd,'Select folder of videos you wish to remove distortion from:');
 
 fNames = read_folder_contents(motion_path,'avi');
 
