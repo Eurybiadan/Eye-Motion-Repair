@@ -5,7 +5,20 @@ function [] = Eye_Motion_Distortion_Repair(motion_path, fName, static_vert_grid_
 %
 % Inputs:
 %
-%    @motion_path: The path to the file we're going to repair.
+%    @motion_path: The path to the file we're going to repair. In order for
+%    distortion to be removed, the file must be accompanied by a
+%    [imagename]_transforms.csv file, which is structured as follows:
+%       - The first row must be a 4 int list [x y w h] detailing what 
+%       rectangle the motion data is ultimately cropped to. **This number
+%       will be different when including different numbers of frames.
+%
+%       -All rows following the first detail how each row of each image was
+%       translated to align to the reference frame.There are 3 rows of data
+%       for each transformed image. For each set of 3 rows, the first row
+%       are the row indices in the reference frame that the image was
+%       aligned to. The second row is the x motion *relative to that index*
+%       that the image moved, and the third row is the y motion for the
+%       same thing.
 %
 %    @fName: The name of the file we're going to repair.
 %
@@ -95,7 +108,7 @@ function [] = Eye_Motion_Distortion_Repair(motion_path, fName, static_vert_grid_
         largest_slow_axis = max(max(framemotion(1:3:size(framemotion,1),:),[],2));        
     end
     if smallest_slow_axis > min(framemotion(1:3:size(framemotion,1),1))
-        smallest_slow_axis = min(framemotion(1:3:size(framemotion,1),1));
+        smallest_slow_axis = min(framemotion(1:3:size(framemotion,1),1))-1;
     end
     
     slow_axis_size = largest_slow_axis-smallest_slow_axis+1;

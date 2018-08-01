@@ -26,6 +26,17 @@ clear;
 close all;
 clc
 
+% Check this version of EMR against git.
+fid = fopen(fullfile(getparent(which(mfilename)),'.VERSION'),'r');
+if fid ~= -1
+    thisver = fscanf(fid,'%s');
+    fclose(fid);
+    
+    git_version_check( 'Eurybiadan','Eye-Motion-Repair', thisver )
+else
+    warning('Failed to detect .VERSION file, unable to determine if running the newest version.')
+end
+
 answer = questdlg('Correct residual static vertical distortions? (Dubra Software Only)');
 switch answer
     case 'Yes'

@@ -166,14 +166,14 @@ for thisfile in os.listdir(dmp_folder_path):
                              
                             ff_row_shift = ff_translation_info_rowshift[frame_ind]
                             ff_col_shift = ff_translation_info_colshift[frame_ind]
-			               
-			                #First set the relative shifts
-                            row_shift = (np.subtract(frame_contents['slow_axis_pixels_in_reference_frame'],\
-			                            frame_contents['slow_axis_pixels_in_current_frame_interpolated']))
+
+                            #First set the relative shifts
+                            row_shift = (np.subtract(frame_contents['slow_axis_pixels_in_reference_frame'],
+                                                     frame_contents['slow_axis_pixels_in_current_frame_interpolated']))
                             col_shift = (frame_contents['fast_axis_pixels_in_reference_frame_interpolated'])
 
-			                #These will contain all of the motion, not the relative motion between the aligned frames-
-			                #So then subtract the full frame row shift
+                            #These will contain all of the motion, not the relative motion between the aligned frames-
+                            #So then subtract the full frame row shift
                             row_shift = np.add(row_shift, ff_row_shift)
                             col_shift = np.add(col_shift, ff_col_shift)
                             all_col_shifts = np.append(all_col_shifts,col_shift)

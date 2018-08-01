@@ -9,12 +9,23 @@ function [] = Eye_Motion_Distortion_Repair(motion_path, fName, crop_ROI, framemo
 %
 %    @fName: The name of the file we're going to repair.
 %
-%    @crop_ROI: The crop region of the output image.
+%    @crop_ROI: The region of the output image in [x y w h]. If this has
+%    multiple rows, then we will search for which row matches of the
+%    dimensions of the image we're working with.
 %
-%    @framemotion: The amount of motion in a given strip, extracted from the dmp file.
+%    @framemotion: The amount of motion in a given strip, extracted from 
+%                  the dmp file, structured as follows:
+%       An i*3 x j matrix detailing how each row (i) of each image was
+%       translated to align to the reference frame.There are 3 rows of data
+%       for each transformed image. For each set of 3 rows the first row
+%       are the row indices in the reference frame that the image was
+%       aligned to. The second row is the x motion *relative to that index*
+%       that the image moved, and the third row is the y motion for the
+%       same thing.
 %
-%    @static_grid_distortion: The residual static distortion (calculated from Static_Distortion_Repair)
-%                             that we'll remove.
+%    @static_grid_distortion: The residual static distortion (calculated 
+%                             from Static_Distortion_Repair) that we'll
+%                             remove.
 %    
 % Copyright (C) 2018 Robert Cooper
 %
@@ -31,6 +42,17 @@ function [] = Eye_Motion_Distortion_Repair(motion_path, fName, crop_ROI, framemo
 % You should have received a copy of the GNU General Public License
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
+
+    % Check this version of EMR against git.
+%     fid = fopen(fullfile(getparent(which(mfilename)),'.VERSION'),'r');
+%     if fid ~= -1
+%         thisver = fscanf(fid,'%s');
+%         fclose(fid);
+% 
+%         git_version_check( 'Eurybiadan','Eye-Motion-Repair', thisver, 'WarningOnly',true )
+%     else
+%         warning('Failed to detect .VERSION file, unable to determine if running the newest version.')
+%     end
 
     repeats = 1;
     outlier_cutoff = 20;
@@ -68,7 +90,7 @@ function [] = Eye_Motion_Distortion_Repair(motion_path, fName, crop_ROI, framemo
     
     for i=1:size(ROI_sizes,1)
         if all(ROI_sizes(i,:) == im_size)
-            crop_ROI = crop_ROI(i,:);
+            crop_ROI = crop_ROI(i,:)+1;
             break;
         end
     end
@@ -86,28 +108,21 @@ clear tmp;
     ref_largest_slow_axis = max(framemotion(1,:));
     ref_smallest_slow_axis = min(framemotion(1,:));
 
+    all_slow_axis_ref_ind = 1:3:size(framemotion,1);
+    all_fast_axis_trans_ind = 2:3:size(framemotion,1);
+    all_slow_axis_trans_ind = 3:3:size(framemotion,1);
+    
     % Find the largest slow axis pixel
-    largest_slow_axis = 0;
-    smallest_slow_axis = 100000;
-   
-    if largest_slow_axis < max(max(framemotion(1:3:size(framemotion,1),:),[],2))
-        largest_slow_axis = max(max(framemotion(1:3:size(framemotion,1),:),[],2));        
-    end
-    if smallest_slow_axis > min(framemotion(1:3:size(framemotion,1),1))
-        smallest_slow_axis = min(framemotion(1:3:size(framemotion,1),1));
-    end
+    largest_slow_axis = max(max(framemotion(all_slow_axis_ref_ind,:)));
+    smallest_slow_axis = min(min(framemotion(all_slow_axis_ref_ind,:)));
     
     slow_axis_size = largest_slow_axis-smallest_slow_axis+1;
     all_xmotion  = cell(slow_axis_size, repeats);
     all_ymotion  = cell(slow_axis_size, repeats);
 
-
-    all_slow_axis_ref_ind = 1:3:size(framemotion,1);
-    all_fast_axis_trans_ind = 2:3:size(framemotion,1);
-    all_slow_axis_trans_ind = 3:3:size(framemotion,1);
-    
     % Determine the index that the row corresponds to
     framemotion(all_slow_axis_ref_ind,:) = 1+framemotion(all_slow_axis_ref_ind,:)-smallest_slow_axis; 
+    %min(min(framemotion(all_slow_axis_ref_ind,:)))
     
     for r=1:repeats
         xmotion  = cell(slow_axis_size,1);
@@ -125,12 +140,13 @@ clear tmp;
         slow_axis_trans_ind = all_slow_axis_trans_ind(randselects);
 
         for j=1:length(slow_axis_ref_ind)
-
+	    
             % Find the max for the row, because a row may not go the full
             % length (could be shorter than the width of the matrix
             [maxref, maxrefind] = max(framemotion( slow_axis_ref_ind(j), : ));
-
+		
             for k=1: maxrefind
+%		disp([ num2str(k) ',' num2str(framemotion( slow_axis_ref_ind(j), k )) ',' num2str(framemotion( fast_axis_trans_ind(j), k )) ])
                 xmotion{framemotion( slow_axis_ref_ind(j), k )}  = [ xmotion{framemotion( slow_axis_ref_ind(j), k )}, ...
                                                                      framemotion( fast_axis_trans_ind(j), k ) ];
                 ymotion{framemotion( slow_axis_ref_ind(j), k )}  = [ ymotion{framemotion( slow_axis_ref_ind(j), k )}, ...
