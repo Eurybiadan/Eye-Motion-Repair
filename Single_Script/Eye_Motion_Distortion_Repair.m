@@ -233,11 +233,12 @@ clear tmp;
     for i=1:size(xmotion_vect,1)
 
         xgriddistortion(i,:) = repmat(median(xmotion_vect(i,:)), [1 size(imStk{1},2)] ); %The ref should be all 0s
-%         if i >= crop_ROI(1) && i<= crop_ROI(2) % Only apply the grid correction within the roi we've cropped to.           
+
+		if ~isempty(static_grid_distortion)
             ygriddistortion(i,:) = repmat(median(ymotion_vect(i,:))+static_grid_distortion(i+crop_ROI(1)-1), [1 size(imStk{1},2)] );
-%         else
-%             ygriddistortion(i,:) = repmat(median(ymotion_vect(i,:)), [1 size(imStk{1},2)] );
-%         end
+        else
+            ygriddistortion(i,:) = repmat(median(ymotion_vect(i,:)), [1 size(imStk{1},2)] );
+        end
     end
     
     disp_field = cat(3,xgriddistortion,ygriddistortion);

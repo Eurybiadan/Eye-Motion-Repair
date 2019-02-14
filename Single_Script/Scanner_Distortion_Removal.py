@@ -62,11 +62,10 @@ except:
 
 
 options = {}
-options['title'] = 'Select the folder containing the DESINUSOID files:'
+options['title'] = 'Select the folder containing the DESINUSOID files, or CANCEL to ignore:'
 options['parent'] = root
 
 desinsoid_folder = tkFileDialog.askdirectory(**options)
-
 
 options = {}
 options['title'] = 'Select the folder containing the DMP files:'
@@ -108,8 +107,10 @@ for thisfile in os.listdir(dmp_folder_path):
             ff_translation_info_colshift = pick['full_frame_ncc']['column_shifts']
             strip_translation_info = pick['sequence_interval_data_list']
 
-
-            static_distortion = mat_engi.Static_Distortion_Repair(os.path.join(desinsoid_folder, pick['desinusoid_data_filename']))
+            if desinsoid_folder != "":
+                static_distortion = mat_engi.Static_Distortion_Repair(os.path.join(desinsoid_folder, pick['desinusoid_data_filename']))
+            else:
+                static_distortion = []
             firsttime = True
 
             pickle_file.close()
@@ -121,7 +122,6 @@ for thisfile in os.listdir(dmp_folder_path):
             # Find all images in our folder that this dmp applies to.
             for thismode in modalities:
                 if thismode in thisfile:
-                    #print "Found the modality of this dmp file! It is: "+thismode
 
                     for mode in modalities:
                         checkfile = thisfile[0:-4].replace(thismode, mode)
