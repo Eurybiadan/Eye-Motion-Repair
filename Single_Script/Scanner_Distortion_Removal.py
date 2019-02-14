@@ -128,9 +128,13 @@ for thisfile in os.listdir(dmp_folder_path):
                         for imagefile in os.listdir(image_folder_path):
                             if (checkfile in imagefile) and (imagefile.endswith(".tif") or imagefile.endswith(".avi")):
                                 images_to_fix.append(imagefile)
-                    
 
-            # If we don't have any accompanying images, just say fuck it and move on
+            if not images_to_fix:# If we don't have any accompanying modality images, just find the image this dmp applies to.
+                checkfile = thisfile[0:-4]
+                for imagefile in os.listdir(image_folder_path):
+                    if (checkfile in imagefile) and (imagefile.endswith(".tif") or imagefile.endswith(".avi")):
+                        images_to_fix.append(imagefile)
+            
             if images_to_fix:
                 print "Using DMP file: " + thisfile
 
