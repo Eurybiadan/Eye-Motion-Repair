@@ -181,6 +181,7 @@ clear tmp;
 
     %% View and adjust each row's translation so that we have something we can
     % move
+    theinds=(1:size(all_xmotion,1))';
 
     xmotion_norm=cell(size(all_xmotion,1),repeats);
     ymotion_norm=cell(size(all_xmotion,1),repeats);
@@ -189,7 +190,7 @@ clear tmp;
 
     estimatevar=zeros(size(all_xmotion,1),repeats);
 
-    % imwrite(im, 'monte_warped.tif','WriteMode','overwrite');
+%     imwrite(im, fullfile(motion_path,[fName(1:end-4) '_motion.tif']),'WriteMode','overwrite');
     for r=1:repeats
 
         for i=1:size(all_xmotion,1)
@@ -201,14 +202,15 @@ clear tmp;
                      all_xmotion{i,r}>-outlier_cutoff & all_ymotion{i,r}>-outlier_cutoff);
 
         % For displaying the row offsets
-%             figure(1);
+%             figgy=figure(1);
 %             plot(all_xmotion{i,r},all_ymotion{i,r},'.');hold on;
 %             plot(median(nooutx),median(noouty),'kx');
 %             plot(0,0,'r.'); hold off;
 %             axis square; axis([-outlier_cutoff outlier_cutoff -outlier_cutoff outlier_cutoff]); 
 %             title([ 'median x: ' num2str(median(all_xmotion{i,r})) ' median y: ' num2str(median(all_ymotion{i,r})) ]);
-%              drawnow;
-%              f= getframe;
+%              drawnow;             
+%              frame= getframe(figgy);
+%              imwrite(frame.cdata, fullfile(motion_path,[fName(1:end-4) '_motion.tif']),'WriteMode','append');
 %              writeVideo(v,f);
 
             estimatevar(i,r) = sqrt(var(all_xmotion{i,r}).^2 + var(all_ymotion{i,r}).^2);
@@ -218,18 +220,40 @@ clear tmp;
             xmotion_vect(i,r) = median(all_xmotion{i,r});
             ymotion_vect(i,r) = median(all_ymotion{i,r});
 
-            if isnan(xmotion_vect(i,r))
+            if isnan(xmotion_vect(i,r)) || isnan(ymotion_vect(i,r))
                 xmotion_vect(i,r) = 0;
-               disp('NAN!');
-            end
-            if isnan(ymotion_vect(i,r))
                 ymotion_vect(i,r) = 0;
-               disp('NAN!');
+                disp('NANI!?');
             end
 
         end
     end
+    
 
+%     figyer = figure(2);
+%     plot(xmotion_vect);    
+%     saveas(figyer,fullfile(motion_path,[fName(1:end-4) '_xmotion.tif']));
+%     figyer = figure(2);
+%     plot(ymotion_vect);    
+%     saveas(figyer,fullfile(motion_path,[fName(1:end-4) '_ymotion.tif']));
+% save(fullfile(motion_path,[fName(1:end-4) '_snapshot.mat']));
+
+    % Smooth our vectors a little bit- should help in situations where
+    % there are large jumps.
+    ft = fittype( 'smoothingspline' );
+    opts = fitoptions( 'Method', 'SmoothingSpline' );
+    opts.Normalize = 'on';
+    opts.SmoothingParam = 0.99998;
+    
+    
+    
+    % Fit model to data.
+    [fitresult] = fit( theinds, xmotion_vect, ft, opts );
+    xmotion_vect = fitresult(theinds);    
+    [fitresult] = fit( theinds, ymotion_vect, ft, opts );
+    ymotion_vect = fitresult(theinds);
+
+    
     for i=1:size(xmotion_vect,1)
 
         xgriddistortion(i,:) = repmat(median(xmotion_vect(i,:)), [1 size(imStk{1},2)] ); %The ref should be all 0s
