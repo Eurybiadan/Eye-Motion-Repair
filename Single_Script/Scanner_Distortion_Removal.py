@@ -89,6 +89,7 @@ for thisfile in os.listdir(dmp_folder_path):
     if thisfile.endswith(".dmp"):
 
         try:
+            print "Using DMP file: " + thisfile
             pickle_path = os.path.join(dmp_folder_path, thisfile)
 
             # Fix the fact that it was done originally in Windows...
@@ -136,7 +137,7 @@ for thisfile in os.listdir(dmp_folder_path):
                         images_to_fix.append(imagefile)
             
             if images_to_fix:
-                print "Using DMP file: " + thisfile
+
 
                 minmaxpix = np.empty([1,2])
                		
@@ -208,8 +209,7 @@ for thisfile in os.listdir(dmp_folder_path):
 
                 # progo.step()
 
-        except(ValueError, RuntimeError) as err:
-            print err
+        except:
             tkMessageBox.showwarning("DMP failed to process.",
                                      "Failed to process DMP (" + thisfile + ")! This file may be corrupted. Re-process the DMP, or contact your local RFC.")
 
