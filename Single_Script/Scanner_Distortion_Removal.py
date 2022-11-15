@@ -5,6 +5,7 @@
 #
 # It requires:
 #    * A *functioning* MATLAB runtime, that has been set up to link to Python (instructions are on MATLAB's website).
+#    * the MATLAB curve fitting toolbox
 #    * The .dmp file output from Alfredo Dubra's Demotion software suite. **I realize this makes it VERY specific-
 #      I do not promise any amazing things happening as result of using this software!
 #    * The 'mat' file corresponding to the grid calibration- also using Alf Dubra's script.
@@ -26,11 +27,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+# This fork has been updated for use with python3 by J.D. Rogers jdrogers42@github
+# Note: update was implemented with the goal to minimize changes from original code
+# Summary of changes: fixed tkinter imports, added () to print statements, added modalities to work with WAIVS channel names
+#
+# python 3 tk renaming, see: https://stackoverflow.com/questions/673174/which-tkinter-modules-were-renamed-in-python-3:
+# Tkinter → tkinter
+# tkMessageBox → tkinter.messagebox
+# tkFileDialog → tkinter.filedialog
+
 try:
     import matlab.engine # This needs to be imported first for some stupid reason.
 except:
-    import Tkinter as tk
-    import Tkconstants, tkFileDialog, tkMessageBox
+    import tkinter as tk #import Tkinter as tk
+    #import Tkconstants, tkFileDialog, tkMessageBox
+    import tkinter.constants as Tkconstants
+    import tkinter.filedialog as tkFileDialog
+    import tkinter.messagebox as tkMessageBox
     import os, sys, ctypes
     import subprocess
     import socket
@@ -48,8 +62,11 @@ except:
         sys.exit(0)
         
 import os, pickle
-import Tkinter as tk
-import Tkconstants, tkFileDialog, tkMessageBox
+import tkinter as tk #import Tkinter as tk
+#import Tkconstants, tkFileDialog, tkMessageBox
+import tkinter.constants as Tkconstants
+import tkinter.filedialog as tkFileDialog
+import tkinter.messagebox as tkMessageBox
 import numpy as np
 
 root = tk.Tk()
@@ -89,27 +106,38 @@ for thisfile in os.listdir(dmp_folder_path):
     if thisfile.endswith(".dmp"):
 
         try:
-            print "Using DMP file: " + thisfile
+            print("Using DMP file: " + thisfile)
             pickle_path = os.path.join(dmp_folder_path, thisfile)
 
             # Fix the fact that it was done originally in Windows...
-            pickle_file = open(pickle_path, 'rb')
-            text = pickle_file.read().replace('\r\n', '\n')
-            pickle_file.close()
+            # pickle_file = open(pickle_path, 'rb')
+            # text = pickle_file.read().replace('\r\n', '\n')
+            # pickle_file.close()
+            #
+            # pickle_file = open(pickle_path, 'wb')
+            # pickle_file.write(text)
+            # pickle_file.close()
+            #
+            # pickle_file = open(pickle_path, 'r')
+            # pick = pickle.load(pickle_file)  
 
-            pickle_file = open(pickle_path, 'wb')
-            pickle_file.write(text)
-            pickle_file.close()
+            # changed to python3 compat -- JDR
+            # Fix the fact that it was done originally in Windows...            
+            with open(pickle_path, 'rb') as pickle_file:
+                text = pickle_file.read().replace(b'\r\n', b'\n') # the b before '\r\n' and '\n' is key -- JDR
+            
+            with open(pickle_path, 'wb') as pickle_file:
+                pickle_file.write(text)
 
-            pickle_file = open(pickle_path, 'r')
-            pick = pickle.load(pickle_file)
+            with open(pickle_path, 'rb') as pickle_file:
+                pick = pickle.load(pickle_file, encoding="latin1") # for python 3 --  jDR
 
             ff_translation_info_rowshift = pick['full_frame_ncc']['row_shifts']
             ff_translation_info_colshift = pick['full_frame_ncc']['column_shifts']
             strip_translation_info = pick['sequence_interval_data_list']
 
             if desinsoid_folder != "":
-                static_distortion = mat_engi.Static_Distortion_Repair(os.path.join(desinsoid_folder, pick['desinusoid_data_filename']))
+                static_distortion = mat_engi.Static_Distortion_Repair(os.path.join(desinsoid_folder, pick['desinusoid_data_filename'].split("//")[-1])) # this uses filename instead of absolute path to avoid errors in finding the file
             else:
                 static_distortion = []
             firsttime = True
@@ -117,7 +145,8 @@ for thisfile in os.listdir(dmp_folder_path):
             pickle_file.close()
 
             # Find the dmp's matching image(s).
-            modalities = ('confocal', 'split_det', 'avg', 'visible')
+            modalities = ('confocal', 'split_det', 'avg', 'visible', 'PMT1CF', 'PMT2NW', 'PMT3NE', 'PMT4SE', 'PMT5SW', 'PMT1C', 'PMT2N', 'PMT3E', 'PMT4S', 'PMT5W') # added WAIVS modes
+
 
             images_to_fix =[]
             # Find all images in our folder that this dmp applies to.
@@ -203,7 +232,7 @@ for thisfile in os.listdir(dmp_folder_path):
 
                 for image in images_to_fix:
                     # progo.configure("Removing distortion from :"+image +"...")
-                    print "Removing distortion from :"+image +"..."
+                    print("Removing distortion from :"+image +"...")
                     mat_engi.Eye_Motion_Distortion_Repair(image_folder_path, image, rois.tolist(),
                                                           shift_array.tolist(), static_distortion, nargout=0)
 
