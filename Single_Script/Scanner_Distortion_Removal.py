@@ -136,6 +136,7 @@ for thisfile in os.listdir(dmp_folder_path):
             ff_translation_info_colshift = pick['full_frame_ncc']['column_shifts']
             strip_translation_info = pick['sequence_interval_data_list']
 
+            # @TODO: Add this repair for Dubra system style data.
             if desinsoid_folder != "":
                 static_distortion = mat_engi.Static_Distortion_Repair(os.path.join(desinsoid_folder, pick['desinusoid_data_filename'].split("//")[-1])) # this uses filename instead of absolute path to avoid errors in finding the file
             else:
